@@ -177,48 +177,22 @@ birthForm.addEventListener('submit', async (e) => {
 });
 
 async function generateKundli(name, place, time, dayNight) {
-    if (typeof CONFIG === 'undefined' || !CONFIG.GEMINI_API_KEY || CONFIG.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-        throw new Error("Gemini API Key is missing. Please add it to config.js.");
-    }
-
-    const prompt = `Act as an expert Vedic Astrologer. Analyze the following birth details:
-Name: ${name}
-Birth Place: ${place}
-Birth Time: ${time} (${dayNight})
-
-Provide the analysis in a strict JSON format with the following keys, containing only text strings (no nested objects, use bullet points where asked):
-"vedic_chart": "Identify Ascendant, Moon sign, and Sun sign.",
-"planets": "3 short bullet points focusing on Health.",
-"dasha": "3 short bullet points focusing on Core Strengths.",
-"career": "3 short bullet points focusing on 5-Year Career Forecast.",
-"wealth": "3 short bullet points focusing on 5-Year Wealth Forecast.",
-"supporting": "3 short bullet points focusing on Areas for Caution."
-
-Return ONLY valid JSON.`;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${CONFIG.GEMINI_API_KEY}`, {
+    const response = await fetch(`/api/generate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-                temperature: 0.7,
-                responseMimeType: "application/json"
-            }
+            name, place, time, dayNight
         })
     });
 
     if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API request failed with status ${response.status}`);
     }
 
-    const data = await response.json();
-    let textResult = data.candidates[0].content.parts[0].text;
-    
-    textResult = textResult.replace(/```json\n?|\n?```/g, '');
-    const resultJson = JSON.parse(textResult);
+    const resultJson = await response.json();
 
     const formatList = (text) => {
         if (!text) return "<li>Data currently unavailable.</li>";

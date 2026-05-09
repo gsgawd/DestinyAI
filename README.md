@@ -21,15 +21,18 @@ sequenceDiagram
     participant User as User
     participant UI as Browser (index.html)
     participant JS as Client Logic (script.js)
+    participant Vercel as Vercel API (api/generate.js)
     participant Gemini as Google Gemini API
 
     User->>UI: Enters Birth Details & Clicks 'Reveal Destiny'
     UI->>JS: Submit Event Triggered
     JS->>UI: Show 'Decoding Cosmos...' Loading Spinner
-    JS->>Gemini: POST /v1beta/models/gemini-2.5-flash:generateContent
-    Note over JS, Gemini: Prompt includes Name, Place, Time, and AM/PM
-    Gemini-->>JS: Returns structured JSON analysis
-    JS->>JS: Parses JSON & Formats Bullet Points
+    JS->>Vercel: POST /api/generate
+    Vercel->>Gemini: POST /v1beta/models/gemini-2.5-flash:generateContent
+    Note over Vercel, Gemini: Vercel securely injects GEMINI_API_KEY from .env
+    Gemini-->>Vercel: Returns structured JSON analysis
+    Vercel-->>JS: Returns processed JSON
+    JS->>JS: Formats Bullet Points
     JS->>UI: Hide Spinner & Inject Data into Dashboard Cards
     UI-->>User: Displays Personalized Astrological Dashboard
 ```
@@ -40,9 +43,10 @@ sequenceDiagram
 DestinyAI/
 ├── index.html       # The main layout, containing all views (Landing, Input, Dashboard, Predictions)
 ├── style.css        # The "Celestial Cinematic" design system, animations, and responsive grids
-├── script.js        # View-switching logic, UI toggles, and the Gemini API fetch implementation
-├── config.js        # (Ignored by Git) Contains the Gemini API key
-├── .env             # Environment variables (if deployed via a Node server later)
+├── script.js        # View-switching logic and API fetching
+├── api/             # Vercel Serverless Functions
+│   └── generate.js  # Backend function that securely calls Gemini AI
+├── .env             # Contains the Gemini API key (e.g., GEMINI_API_KEY=...)
 └── .gitignore       # Git ignore rules to protect sensitive keys
 ```
 
@@ -62,18 +66,18 @@ To run this project on your local machine, follow these steps:
    ```
 
 2. **Set Up the API Key:**
-   Since the application runs purely in the browser, you need to provide your Google Gemini API key. Create a file named `config.js` in the root directory and add the following code:
-   ```javascript
-   // config.js
-   const CONFIG = {
-       GEMINI_API_KEY: "YOUR_ACTUAL_API_KEY_HERE"
-   };
+   To keep your API key secure, the frontend relies on a Vercel serverless function (`api/generate.js`). Create a `.env` file in the root directory and add your key:
+   ```env
+   GEMINI_API_KEY=YOUR_ACTUAL_API_KEY_HERE
    ```
 
 3. **Launch the App:**
-   Because this is a vanilla HTML/JS app, you don't need to install any npm packages! You can simply open `index.html` in your web browser. 
-   
-   *Tip: For the best experience, use an extension like **Live Server** in VS Code to run the app on a local port (e.g., `http://127.0.0.1:5500`).*
+   Because this application uses a serverless function, you must use the Vercel CLI to run it locally so the `/api` routes work:
+   ```bash
+   npm i -g vercel
+   vercel dev
+   ```
+   *The app will automatically start on `http://localhost:3000`.*
 
 4. **Experience the Cosmos:**
    Navigate the UI, toggle between Dark and Light mode, and generate your own Kundli to watch the Gemini API in action!
