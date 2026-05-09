@@ -1,2 +1,2 @@
 # Ignore configuration file containing secrets
-config.js
+.env
